@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+</head>
+<body>
+
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded",function(){
+          let btn = document.querySelector("input[name=send]");
+          btn.addEventListener("click", async function(event){
+            event.preventDefault();
+            let sender = "{{ name }}";
+            let receiver = document.querySelector("select[name=receiver]").value;
+            let amount = document.querySelector("input[name=famount]").value;
+            let response = await fetch(`/transfer?sender=${sender}&receiver=${receiver}&amount=${amount}`,
+            {
+                // ?sender=${name}&receiver=${receiver}&amount=${amount}
+              method: "GET",
+            });
+
+            window.location.reload();
+          })
+        })
+      </script>
+
+       <h1>{{ name }}</h1>
+       <h2>On your account: {{ balance }} $</h2>
+       <form action="transfer" method="GET">
+            <label for="famount">Amount of money to transfer:</label>
+            <input type="text" name="famount">
+            
+
+            <select name="receiver">
+                <!-- make with fasAPI-->
+                {% for user in users %}
+                <option >{{ user }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="submit" name="send" value="Send">
+       </form> 
+</body>
+</html>
