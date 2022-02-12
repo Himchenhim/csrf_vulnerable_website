@@ -49,7 +49,8 @@ def verify_password(username: str, password: str) -> bool:
         stored_password_hash = users[username]["password"].lower()
     except KeyError:
         return False
-    print(f"{users[username]['password']}  === {password_hash}")
+    print(f"{users[username]['password']}")
+    print(f"{password}")
     return password_hash == stored_password_hash 
 
 
@@ -60,8 +61,8 @@ users = {
         "balance":100_00
     },
     "nastya@mail.ru":{
-        "name": "nastya",
-        "password": "14eae6224c4ed74ffad15ec033188839165962133d8d88e2877d7ec4cac67d76 ", #
+        "name": "Nastya",
+        "password": "14eae6224c4ed74ffad15ec033188839165962133d8d88e2877d7ec4cac67d76", #
         "balance": 50_00
     },
     "bob@gmail.com":{
