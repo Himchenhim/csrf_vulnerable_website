@@ -12,10 +12,24 @@ from fastapi.templating import Jinja2Templates
 from typing import Optional
 
 
-
-
 templates = Jinja2Templates(directory="templates")
 app = FastAPI()
+
+# we allow other websites to make request to our server
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [ '*' ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+#-----------------------------------------------
+
+
 
 SECRET_KEY = "cf9fee43b30cb4f54f991ad0ef952feb9fa28ec0ca2685b098f90a247a14d295"
 PASSWORD_SALT = "7434c88948f15c3359538ff5c1fff2ba8540b441490160099a6623214d64a861"
@@ -49,8 +63,6 @@ def verify_password(username: str, password: str) -> bool:
         stored_password_hash = users[username]["password"].lower()
     except KeyError:
         return False
-    print(f"{users[username]['password']}")
-    print(f"{password}")
     return password_hash == stored_password_hash 
 
 
@@ -113,10 +125,12 @@ async def transfer_money(request: Request, signed_username: str =
     receiver = values[0].split("=")[-1]
     amount = values[1].split("=")[-1]  
 
+    
+
     # if sender exists ( checking with cookies )
-    print(signed_username)
     if not signed_username:
-        return json.dumps({"success":False,"message":"<h1>You don't have permision to this function</h1>"})
+        return Response(json.dumps({"success":False,"message":"<h1>You don't have permision to this function</h1>"}),
+        media_type="application/json")
 
     sender = users[get_username_from_signed_username(signed_username)]["name"]
 
@@ -132,13 +146,20 @@ async def transfer_money(request: Request, signed_username: str =
                 login_of_sender = key
             
         if not login_of_sender:
-            return json.dumps({"success":False,"Error":"Something went wrong"})
+            return Response(json.dumps({"success":False,"Error":"Something went wrong"}),
+        media_type="application/json")
 
         amount_of_money = 0
         try: 
             amount_of_money = int(amount)
+
+            if amount_of_money <= 0:
+                return Response(json.dumps({"success":False,"Error":"You can't transfer 0 or lesser dollars!"}),
+                    media_type="application/json")
+            
         except ValueError:
-            return json.dumps({"success":False,"Error":"<h1>In field about amount of money not a number!!!</h1>"})
+            return Response(json.dumps({"success":False,"Error":"<h1>In field about amount of money not a number!!!</h1>"}),
+                media_type="application/json")
 
         if amount_of_money <= users[login_of_sender]["balance"]:
             login_of_receiver = ""
@@ -146,18 +167,21 @@ async def transfer_money(request: Request, signed_username: str =
                 if users[key]["name"] == receiver:
                     login_of_receiver = key
             if not login_of_receiver:
-                return json.dumps({"success":False,"Error":"Bad POST request!"})
+                return Response(json.dumps({"success":False,"Error":"Bad POST request!"}),media_type="application/json")
 
             # transfering money from one account to another
             users[login_of_sender]["balance"] -= amount_of_money
             users[login_of_receiver]["balance"] += amount_of_money
-            return json.dumps({"succes":True,"message":"Transaction has been completed successfully"})
+            return Response(json.dumps({"succes":True,"message":"Transaction has been completed successfully"}),
+                media_type="application/json")
         else:
-            return json.dumps({"success":False,"Error":"You want to transfer more money that you have!"})
+            return Response(json.dumps({"success":False,"Error":"You want to transfer more money that you have!"}),
+            media_type="application/json")
 
 
     else:
-        return json.dumps({"success":False,"Error":"Somethig went wrong"})
+        return Response(json.dumps({"success":False,"Error":"Somethig went wrong"}),
+        media_type="application/json")
         
 
 
@@ -169,7 +193,7 @@ async def authorize_user(request: Request, data: dict = Body(...)):
     username = data["username"]
     password = data["password"]
     user = users.get(username)
-    
+
     try:
         if user  and verify_password(username,password):
             
@@ -191,7 +215,7 @@ async def authorize_user(request: Request, data: dict = Body(...)):
                 }),
                 media_type="application/json"
             ); 
-            response.set_cookie(key="signed_username", value = signed_username)
+            response.set_cookie(key="signed_username", value = signed_username )
              
             return response 
             
