@@ -24,6 +24,9 @@
             window.location.reload();
 
             let response_json = await response.json();
+
+
+
             if (response_json.success){
               console.log("error!");
               let body = document.querySelector("body");
@@ -38,6 +41,7 @@
             }
           })
         })
+
       </script>
 
        <h1>{{ name }}</h1>
