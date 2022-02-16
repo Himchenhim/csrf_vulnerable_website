@@ -48,12 +48,13 @@
                 body: `{"username": "${username}", "password": "${password}"}`
               });
               let response_json = await response.json();
-              console.log(response_json);
               if (response_json.success){
                 let body = document.querySelector("body");
                 body.style.backgroundColor = "white";
                 body.style.display = "block";
                 body.innerHTML = response_json.message;
+                window.location.reload();
+                
               } else{
                 let body = document.querySelector("body");
                 body.innerHTML = "Something went wrong! Try again..."

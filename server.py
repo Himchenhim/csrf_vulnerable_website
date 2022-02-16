@@ -90,11 +90,6 @@ async def show_index_page(request: Request,signed_username: str = Cookie(default
         
         if username:
 
-            with open("templates/profile.html","r") as f:
-                
-                file = f.read()
-                response = Response()
-
             return templates.TemplateResponse("profile.html",
                             {"request":request,"users":get_name_of_users(),"name":users[username]["name"],"balance":users[username]["balance"]})
 
@@ -109,16 +104,22 @@ async def show_index_page(request: Request,signed_username: str = Cookie(default
 
 
 @app.get("/transfer")
-async def transfer_money(request: Request):
+async def transfer_money(request: Request, signed_username: str =
+        Cookie(default=None)) -> Optional[str]:
+    
     url = request.url
     
-    
     values = str(url).split("?")[-1].split("&")
-    sender = values[0].split("=")[-1] 
-    receiver = values[1].split("=")[-1]
-    amount = values[2].split("=")[-1]  
+    receiver = values[0].split("=")[-1]
+    amount = values[1].split("=")[-1]  
 
-    # if sender and receiver exist
+    # if sender exists ( checking with cookies )
+    print(signed_username)
+    if not signed_username:
+        return json.dumps({"success":False,"message":"<h1>You don't have permision to this function</h1>"})
+
+    sender = users[get_username_from_signed_username(signed_username)]["name"]
+
     all_names = []
     for key in users.keys():
         all_names.append(users[key]["name"])
@@ -131,13 +132,13 @@ async def transfer_money(request: Request):
                 login_of_sender = key
             
         if not login_of_sender:
-            return {"Error":"Something went wrong"}
+            return json.dumps({"success":False,"Error":"Something went wrong"})
 
         amount_of_money = 0
         try: 
             amount_of_money = int(amount)
         except ValueError:
-            return {"Error":"<h1>In field about amount of money not a number!!!</h1>"}
+            return json.dumps({"success":False,"Error":"<h1>In field about amount of money not a number!!!</h1>"})
 
         if amount_of_money <= users[login_of_sender]["balance"]:
             login_of_receiver = ""
@@ -145,48 +146,57 @@ async def transfer_money(request: Request):
                 if users[key]["name"] == receiver:
                     login_of_receiver = key
             if not login_of_receiver:
-                return {"Error":"Something went wrong!"}
+                return json.dumps({"success":False,"Error":"Bad POST request!"})
 
             # transfering money from one account to another
             users[login_of_sender]["balance"] -= amount_of_money
             users[login_of_receiver]["balance"] += amount_of_money
-
+            return json.dumps({"succes":True,"message":"Transaction has been completed successfully"})
         else:
-            return json.dumps({"Error":"You want to transfer more money that you have!"})
+            return json.dumps({"success":False,"Error":"You want to transfer more money that you have!"})
 
 
     else:
-        return {"Error":"Somethig went wrong"}
+        return json.dumps({"success":False,"Error":"Somethig went wrong"})
         
 
 
 
 
 @app.post("/login")
-async def authorize_user(data: dict = Body(...)):
+async def authorize_user(request: Request, data: dict = Body(...)):
+    
     username = data["username"]
     password = data["password"]
     user = users.get(username)
     
     try:
-        
         if user  and verify_password(username,password):
             
-            response = Response(
-                    json.dumps({
-                        "success": True,
-                        "message": f"Hi, {users[username]['name']}<br>Your balance: {users[username]['balance']}"
-                    }),
-                    media_type="application/json",
-                    )
+            html_content = templates.get_template("profile.html").render( 
+                            {"request":request,
+                            "users":get_name_of_users(),
+                            "name":users[username]["name"],
+                            "balance":users[username]["balance"]
+                            }
+                        )
             
             username_b64 = data_to_datab64(username)
             signed_username = username_b64 + "." + make_signed_data(username)
+            
+            response = Response (
+                json.dumps({
+                    "success":True,
+                    "message":html_content
+                }),
+                media_type="application/json"
+            ); 
             response.set_cookie(key="signed_username", value = signed_username)
-            return response
-        
-        else:
+             
+            return response 
+            
 
+        else:
             return Response(
             json.dumps({
                         "success": False,

@@ -16,13 +16,26 @@
             let sender = "{{ name }}";
             let receiver = document.querySelector("select[name=receiver]").value;
             let amount = document.querySelector("input[name=famount]").value;
-            let response = await fetch(`/transfer?sender=${sender}&receiver=${receiver}&amount=${amount}`,
+            let response = await fetch(`/transfer?receiver=${receiver}&amount=${amount}`,
             {
-                // ?sender=${name}&receiver=${receiver}&amount=${amount}
               method: "GET",
             });
 
             window.location.reload();
+
+            let response_json = await response.json();
+            if (response_json.success){
+              console.log("error!");
+              let body = document.querySelector("body");
+              body.style.backgroundColor = "white";
+              body.style.display = "block";
+              body.innerHTML = response_json.message;
+              window.location.reload();
+            } else{
+              console.log("error!");
+              let body = document.querySelector("body");
+              body.innerHTML = response_json.Error;
+            }
           })
         })
       </script>
